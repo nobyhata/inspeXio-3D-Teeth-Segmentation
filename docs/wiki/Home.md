@@ -5,7 +5,8 @@
 ## Pages
 
 1. **[[Tooth segmentation with nnInteractive]]**: setup, one box prompt per tooth, fixing spills with exclusion points, checking the result, and exporting STL surfaces.
-2. **[[History of discovery]]**: how the method came about, including what was tried along the way (thresholding, CBCT-trained dental models) and why it did not work on these scans.
+2. **[[InspeXio Teeth module]]**: the 3D Slicer module that does the segmentation, plans an apicoectomy (apex, root axis, resection plane 3 mm from the apex) and scores a cut from a post-cut scan.
+3. **[[History of discovery]]**: how the method came about, including what was tried along the way (thresholding, CBCT-trained dental models) and why it did not work on these scans.
 
 ## Related
 
