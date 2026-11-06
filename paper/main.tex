@@ -27,14 +27,14 @@ Open Tools for Shimadzu inspeXio Data in 3D~Slicer}
 \maketitle
 
 \begin{abstract}
-Laboratory micro-CT scanners store their reconstructions in vendor formats that general-purpose medical imaging software does not read, and their grey values are not calibrated to Hounsfield units. This white paper presents an open workflow that takes a Shimadzu inspeXio reconstruction from its raw slice files to individually segmented tooth models in 3D~Slicer. A converter writes a detached NRRD header for the inspeXio \texttt{.cb} slice files, which are uncompressed 16-bit TIFF images, so that a reconstruction loads in 3D~Slicer without copying any pixel data, and a rendering script applies opacity settings derived from the grey values of the specimen. Each tooth is then segmented, crown and roots, by the promptable foundation model nnInteractive from one two-dimensional box per tooth, with optional negative points to correct leakage into the surrounding material. On an example scan of an embedded dental specimen, the workflow produced nine separate tooth models in about four seconds per tooth on a consumer GPU. The converter, the scripts and step-by-step guides are released in two public repositories.
+Laboratory micro-CT scanners store their reconstructions in vendor formats that general-purpose medical imaging software does not read, and their grey values are not calibrated to Hounsfield units. This white paper presents an open workflow that takes a Shimadzu inspeXio reconstruction from its raw slice files to individually segmented tooth models in 3D~Slicer. A converter writes a detached NRRD header for the inspeXio \texttt{.cb} slice files, which are uncompressed 16-bit TIFF images, so that a reconstruction loads in 3D~Slicer without copying any pixel data. Each tooth is then segmented, crown and roots, by the promptable foundation model nnInteractive from one two-dimensional box per tooth, with optional negative points to correct leakage into the surrounding material. On an example scan of an embedded dental specimen, the workflow produced nine separate tooth models in about four seconds per tooth on a consumer GPU. The converter, the scripts and step-by-step guides are released in two public repositories.
 \end{abstract}
 
 \section{Introduction}
 
 Micro-CT is widely used to study the morphology of teeth and bone because it resolves structures of a few tens of micrometres in three dimensions. Turning a micro-CT scan into quantitative anatomy, however, requires moving the data from the scanner's own software into a general analysis environment, and the reconstruction formats of laboratory scanners are rarely documented. Segmentation adds a further difficulty, since dental specimens are often embedded in a base material whose density is close to that of dentin, so that the roots are separated from their surroundings only by a thin, dark periodontal outline. Global thresholds cannot follow such a boundary, and segmentation models trained on clinical cone-beam CT expect the strong contrast between tooth and soft tissue found in patients.
 
-3D~Slicer~\cite{fedorov2012slicer} is a natural destination for such data, because it combines visualization, segmentation and an embedded Python environment in a free and open platform. This white paper describes two open-source tools for 3D~Slicer, a converter with a volume rendering script for Shimadzu inspeXio reconstructions~\cite{repoConverter} and a tooth segmentation package based on the promptable model nnInteractive~\cite{repoSegmentation}, and it reports their application to an example scan.
+3D~Slicer~\cite{fedorov2012slicer} is a natural destination for such data, because it combines visualization, segmentation and an embedded Python environment in a free and open platform. This white paper describes two open-source tools for 3D~Slicer, a converter for Shimadzu inspeXio reconstructions~\cite{repoConverter} and a tooth segmentation package based on the promptable model nnInteractive~\cite{repoSegmentation}, and it reports their application to an example scan.
 
 \section{Data}
 
@@ -52,17 +52,6 @@ The example scan, \texttt{lot261019\_M1\_Fgfr3++\_no\_gel\_dpi1w2\_cb\_000}, was
 An inspeXio reconstruction folder holds one \texttt{.cb} file per slice together with per-slice \texttt{.inf} and \texttt{.prm} files and a text file that states the pixel size. Each \texttt{.cb} file is an uncompressed, little-endian, 16-bit TIFF image whose pixel data occupy one contiguous block after a 1,372-byte header. Because all slices share this layout, a detached NRRD header that lists the slice files and instructs the reader to skip the header of each is sufficient for 3D~Slicer to load the full volume, so that no pixel data are copied and the header is a few kilobytes for a 1.8~GB volume.
 
 The converter \texttt{cb2nrrd.py}~\cite{repoConverter} implements this approach for any inspeXio reconstruction. It reads the image size, bit depth, byte order and data offset from the TIFF tags of each file and the voxel size from the text file, it verifies that all slices share one layout and that the slice numbering has no gaps, and it then writes either the detached header or a self-contained, optionally compressed NRRD file. It processes a single reconstruction or every reconstruction below a given folder, it needs only the Python standard library to write headers and NumPy to write full files, and it also runs inside 3D~Slicer's Python console.
-
-\section{Volume rendering}
-
-Because inspeXio grey values are scanner units, the computed-tomography presets of 3D~Slicer do not apply, and the opacity transfer function is set from the grey values of the specimen instead. In the example scan the background and holder lie near 34,700, the material around the teeth near 37,200, and the teeth and bone between about 38,100 and 39,800, so an opacity ramp from 37,800 to 39,000 renders complete teeth while keeping the surrounding material transparent. Since bone of the same density covers the teeth when they are seen from above, the arch is displayed from the occlusal side (Fig.~\ref{fig:vr}). The script \texttt{render\_in\_slicer.py}~\cite{repoConverter} loads a converted volume and applies these settings, and it can print a grey-value histogram so that the thresholds can be chosen for other scans.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=0.48\linewidth]{../docs/images/history_volume_rendering.png}
-\caption{Volume rendering of the teeth viewed from the occlusal side, with opacity rising from grey value 37,800 to 39,000.}
-\label{fig:vr}
-\end{figure}
 
 \section{Tooth segmentation with nnInteractive}
 
@@ -131,7 +120,7 @@ The work has limitations. The workflow was demonstrated on a single scan, and th
 
 \section{Availability}
 
-The converter and the volume rendering script, with a step-by-step guide, are available at \url{https://github.com/nobyhata/Shimadzu-inspeXio-converter-for-3D-Slicer}~\cite{repoConverter}. The segmentation script, the prompts for the example scan and a step-by-step guide are available at \url{https://github.com/nobyhata/inspeXio-3D-Teeth-Segmentation}~\cite{repoSegmentation}. The workflow was tested with 3D~Slicer~5.12.4 on Windows.
+The converter is available at \url{https://github.com/nobyhata/Shimadzu-inspeXio-converter-for-3D-Slicer}~\cite{repoConverter}. The segmentation script, the prompts for the example scan and a step-by-step guide are available at \url{https://github.com/nobyhata/inspeXio-3D-Teeth-Segmentation}~\cite{repoSegmentation}. The workflow was tested with 3D~Slicer~5.12.4 on Windows.
 
 \section*{Acknowledgments}
 
